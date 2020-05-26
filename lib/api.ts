@@ -20,11 +20,17 @@ export type IArgsValueMapper = (
   value: any,
 ) => any
 
-export type IArgsMethodMapper = (methodName: string) => string
+export type IRequestMethodMapper = (
+  methodName: string,
+  config: IApiConfig,
+) => {
+  requestMethod: string
+  apiMethodName: string
+}
 
-export type IBodyMapper = (body: any) => string
+export type IRequestBodyMapper = (body: any) => string
 
-export type IResponseMapper = (response: Promise<Response>) => Promise<any>
+export type IResponseMapper = (response: Response) => Promise<any>
 
 export interface IMethodArgs {
   [argName: string]: any
@@ -36,8 +42,8 @@ export interface IApiConfig {
   fetchConfig?: IFetchInit
   argsPlaceMapper?: IArgsPlaceMapper
   argsValueMapper?: IArgsValueMapper
-  argsMethodMapper?: IArgsMethodMapper
-  bodyMapper?: IBodyMapper
+  requestMethodMapper?: IRequestMethodMapper
+  requestBodyMapper?: IRequestBodyMapper
   responseMapper?: IResponseMapper
 }
 
@@ -45,12 +51,43 @@ export const ALLOWED_REQUEST_METHODS = ['GET', 'POST', 'PUT', 'DELETE']
 export const DEFAULT_DETECTED_REQUEST_METHOD = 'POST'
 export const DEFAULT_STATIC_REQUEST_METHOD = 'GET'
 
-export const resolveRequestType = (methodName: string) =>
-  ALLOWED_REQUEST_METHODS.find((method) =>
-    new RegExp(method.toLocaleLowerCase() + '([^a-z].*)?$').test(methodName),
-  ) || DEFAULT_DETECTED_REQUEST_METHOD
+export const resolveRequestMethod = (
+  methodName: string,
+  config: IApiConfig,
+) => {
+  const requestMethod =
+    ALLOWED_REQUEST_METHODS.find((method) =>
+      new RegExp(method.toLocaleLowerCase() + '([^a-z].*)?$').test(methodName),
+    ) || DEFAULT_DETECTED_REQUEST_METHOD
 
-export class Api {
+  if (
+    config.useMethodConvention &&
+    (methodName as string).startsWith(requestMethod.toLocaleLowerCase())
+  ) {
+    let actualMethodName = (methodName as string).substr(requestMethod.length)
+
+    if (
+      actualMethodName.charAt(0) === actualMethodName.charAt(0).toUpperCase()
+    ) {
+      actualMethodName =
+        actualMethodName.charAt(0).toLocaleLowerCase() +
+        actualMethodName.substr(1)
+
+      methodName = actualMethodName
+    }
+  }
+
+  return {
+    requestMethod,
+    apiMethodName: methodName,
+  }
+}
+
+export interface IApiClass extends Function {
+  new (config?: IApiConfig): any
+}
+
+export const Api = class {
   constructor(config: IApiConfig = {}) {
     config = {
       baseUrl: '',
@@ -58,12 +95,15 @@ export class Api {
       argsPlaceMapper: (requestMethod) =>
         requestMethod === 'GET' ? EArgType.QUERY : EArgType.BODY,
       argsValueMapper: (...[, , value]) => value,
-      argsMethodMapper:
+      requestMethodMapper:
         config.useMethodConvention !== false
-          ? resolveRequestType
-          : () => DEFAULT_STATIC_REQUEST_METHOD,
-      bodyMapper: (body) => JSON.stringify(body),
-      responseMapper: (response) => response.then((r) => r.json()),
+          ? resolveRequestMethod
+          : (apiMethodName) => ({
+              requestMethod: DEFAULT_STATIC_REQUEST_METHOD,
+              apiMethodName,
+            }),
+      requestBodyMapper: (body) => JSON.stringify(body),
+      responseMapper: (response) => response.json(),
       ...config,
       fetchConfig: {
         requestInit: {
@@ -74,7 +114,7 @@ export class Api {
     }
 
     return new Proxy(this, {
-      get: (...[, methodName]) => (options: IMethodArgs = {}) => {
+      get: (...[, methodName]) => async (options: IMethodArgs = {}) => {
         const clonedConfig = {
           ...config,
           fetchConfig: {
@@ -95,33 +135,13 @@ export class Api {
         const {requestInit} = clonedConfig.fetchConfig
         let url = clonedConfig.baseUrl
 
-        requestInit.method = clonedConfig.argsMethodMapper(methodName as string)
+        const {apiMethodName, requestMethod} = clonedConfig.requestMethodMapper(
+          methodName as string,
+          clonedConfig,
+        )
 
-        if (
-          config.useMethodConvention &&
-          (methodName as string).startsWith(
-            requestInit.method.toLocaleLowerCase(),
-          )
-        ) {
-          let actualMethodName = (methodName as string).substr(
-            requestInit.method.length,
-          )
-
-          if (
-            actualMethodName.charAt(0) ===
-            actualMethodName.charAt(0).toUpperCase()
-          ) {
-            actualMethodName =
-              actualMethodName.charAt(0).toLocaleLowerCase() +
-              actualMethodName.substr(1)
-
-            url += `/${actualMethodName as string}`
-          } else {
-            url += `/${methodName as string}`
-          }
-        } else {
-          url += `/${methodName as string}`
-        }
+        requestInit.method = requestMethod
+        url += `/${apiMethodName}`
 
         const bodyArgs: IMethodArgs = {}
 
@@ -154,7 +174,7 @@ export class Api {
         })
 
         if (Object.keys(bodyArgs).length) {
-          requestInit.body = clonedConfig.bodyMapper(bodyArgs) as any
+          requestInit.body = clonedConfig.requestBodyMapper(bodyArgs) as any
         }
 
         if (Object.keys(queryArgs).length) {
@@ -168,10 +188,14 @@ export class Api {
           url += `?${query}`
         }
 
-        const promise = fetch(url, clonedConfig.fetchConfig.requestInit)
+        const response = await fetch(url, clonedConfig.fetchConfig.requestInit)
 
-        return clonedConfig.responseMapper(promise)
+        if (!response.ok || response.status !== 200) {
+          throw response
+        }
+
+        return clonedConfig.responseMapper(response)
       },
     })
   }
-}
+} as IApiClass
