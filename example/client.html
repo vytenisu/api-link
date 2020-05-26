@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Examples</title>
+    <script src="../dist/index.js"></script>
+    <script>
+      const baseUrl = 'http://localhost:3000'
+      const basicApi = new window.ApiLink.Api({baseUrl})
+
+      const makeCalls = async () => {
+        responses = {
+          getConstant: await basicApi.getConstant(),
+          getMirror: await basicApi.getMirror({hello: 'world'}),
+          postMirror: await basicApi.postMirror({
+            hello: 'world',
+            world: 'hello',
+          }),
+        }
+      }
+
+      const run = async () => {
+        await makeCalls()
+        document.getElementById('output').innerHTML = JSON.stringify(
+          responses,
+          null,
+          2,
+        )
+      }
+    </script>
+  </head>
+  <body onload="run()">
+    <pre id="output"></pre>
+  </body>
+</html>

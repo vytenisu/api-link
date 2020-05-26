@@ -17,6 +17,7 @@ const exportedConfig = {
     filename: 'index.js',
     sourceMapFilename: 'index.js.map',
     libraryTarget: 'umd',
+    library: 'ApiLink',
   },
   resolveLoader: {
     modules: [__dirname + '/node_modules'],
