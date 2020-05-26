@@ -1,0 +1,63 @@
+{
+  "name": "api-link",
+  "version": "0.0.0",
+  "description": "Server API made accessible via proxy methods",
+  "main": "dist/index.js",
+  "scripts": {
+    "prepublishOnly": "npm run lint && npm run build && npm run test && npm run docs",
+    "test": "./node_modules/.bin/jest --forceExit --detectOpenHandles",
+    "testSync": "./node_modules/.bin/jest --runInBand --forceExit --detectOpenHandles",
+    "lint": "./node_modules/.bin/tslint -c ./tslint.json -p ./tsconfig.json -t stylish ./lib/**/*.ts",
+    "build": "./node_modules/.bin/webpack",
+    "buildDev": "./node_modules/.bin/webpack --config webpack.config.dev.js",
+    "docs": "./node_modules/.bin/typedoc --module commonjs --target ES6 --exclude **/*.test.* --ignoreCompilerErrors --out ./docs --readme ./README.md --mode file ./index.ts ./lib"
+  },
+  "homepage": "https://github.com/vytenisu/api-link",
+  "bugs": {
+    "url": "https://github.com/vytenisu/api-link/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vytenisu/api-link.git"
+  },
+  "keywords": [
+    "api",
+    "back-end",
+    "server",
+    "proxy",
+    "object",
+    "class",
+    "easy",
+    "simple",
+    "ts",
+    "TypeScript",
+    "auto",
+    "generator",
+    "vytenis",
+    "urbonavicius",
+    "vytenisu",
+    "WhiteTurbine",
+    "Whitend"
+  ],
+  "author": {
+    "name": "Vytenis Urbonavičius",
+    "url": "https://github.com/vytenisu"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^25.1.4",
+    "find-node-modules": "^2.0.0",
+    "jest": "^25.2.3",
+    "license-webpack-plugin": "^2.1.4",
+    "npm-dts-webpack-plugin": "^1.2.1",
+    "ts-jest": "^25.2.1",
+    "ts-loader": "^6.2.2",
+    "ts-node": "^8.8.1",
+    "tslint": "^6.1.0",
+    "typedoc": "^0.17.3",
+    "typescript": "^3.8.3",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11",
+    "webpack-node-externals": "^1.7.2"
+  }
+}
