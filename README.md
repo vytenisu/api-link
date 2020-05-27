@@ -109,7 +109,7 @@ _API Link_ is best when it is used with a tidy and consistent back-end solution.
 
 In many cases it might be a good idea to extend _Api_ class provided by _API Link_. There are multiple benefits to this:
 
-- encapsulating configuration within extended class making it very simple to use.
+- encapsulating configuration within extended class making it very simple to use
 - overriding default auto-generated methods and injecting additional functionality before/after calls gives additional flexibility
 
 In order for extension to work properly, it needs to be done in a certain way:
@@ -190,10 +190,10 @@ const api = new Api({
 })
 ```
 
-Above code would convert path from "/devices?id=123" to "/devices/123/info" when _id_ is provided. Hooks are rather low lever to allow maximum flexibility.
+Above code would convert path from "/devices?id=123" to "/devices/123/info" when _id_ is provided. Hooks are rather low level to allow maximum flexibility.
 
 ---
 
-TypeScript developers will notice that auto-generated methods are not typed. This is because library has no way of knowing what data types are expected to be used.
+TypeScript developers will notice that auto-generated methods are not typed. This is because at the moment library has no way of knowing what data types are expected to be used.
 
 Types can be added manually by extending Api class using method described earlier. Ideally, server could be generating definitions which could then be converted to TypeScript interface. However, at this point it is out of scope for _API Link_.

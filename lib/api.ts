@@ -74,7 +74,7 @@ export const formatMethod = (methodName: string) =>
 /**
  * Api Link class
  */
-export const Api = class {
+export const Api = (class {
   protected _proxy: any
 
   constructor(config: IApiConfig = {}) {
@@ -107,7 +107,7 @@ export const Api = class {
     this._proxy = createProxy.call(this, config, true)
     return createProxy.call(this, config)
   }
-} as IApiClass
+} as any) as IApiClass
 
 const createProxy = function (config: IApiConfig, ignoreOverrides = false) {
   return new Proxy(this, {
