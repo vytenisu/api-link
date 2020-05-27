@@ -198,11 +198,9 @@ export interface IApiConfig {
 /**
  * Generated API Class
  */
-export interface IApiClass extends Function {
-  new (config?: IApiConfig): {
-    [name: string]: any
-    _proxy: {[name: string]: any}
-  }
+export type IApiClass = new (config?: IApiConfig) => {
+  [name: string]: any
+  _proxy: {[name: string]: any}
 }
 
 /**

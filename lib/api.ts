@@ -16,7 +16,7 @@ import {paramCase} from 'param-case'
  */
 export const resolveMethodByConvention = (methodName: string) => {
   const requestMethod =
-    ALLOWED_REQUEST_METHODS.find((method) =>
+    ALLOWED_REQUEST_METHODS.find(method =>
       new RegExp(method.toLocaleLowerCase() + '([^a-z].*)?$').test(methodName),
     ) || DEFAULT_DETECTED_REQUEST_METHOD
 
@@ -68,7 +68,7 @@ export const getQuery = (args: IMethodArgs) => {
 export const formatMethod = (methodName: string) =>
   methodName
     .split('/')
-    .map((name) => paramCase(name))
+    .map(name => paramCase(name))
     .join('/')
 
 /**
@@ -81,16 +81,16 @@ export const Api = (class {
     config = {
       baseUrl: '',
       defaultArgsMapper: () => ({}),
-      argsDeliveryMapper: (requestMethod) =>
+      argsDeliveryMapper: requestMethod =>
         requestMethod === 'GET'
           ? EArgDeliveryType.QUERY
           : EArgDeliveryType.BODY,
       argsValueMapper: (...[, , value]) => value,
       requestMethodMapper: resolveMethodByConvention,
       apiMethodFormatter: formatMethod,
-      requestBodyMapper: (body) => JSON.stringify(body),
-      requestQueryMapper: (query) => getQuery(query),
-      responseMapper: (response) => response.json(),
+      requestBodyMapper: body => JSON.stringify(body),
+      requestQueryMapper: query => getQuery(query),
+      responseMapper: response => response.json(),
       overrideFetchArgs: (url, requestInit) => ({
         url,
         requestInit,
@@ -198,7 +198,7 @@ const mapValues = (
   config: IApiConfig,
   methodName: string,
 ) => {
-  for (let argName in mergedArgs) {
+  for (const argName in mergedArgs) {
     if (mergedArgs.hasOwnProperty(argName)) {
       mergedArgs[argName] = config.argsValueMapper(
         methodName as string,
