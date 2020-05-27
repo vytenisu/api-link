@@ -1,7 +1,7 @@
 {
   "name": "api-link",
-  "version": "0.0.0",
-  "description": "Server API made accessible via proxy methods",
+  "version": "1.0.0",
+  "description": "Back-end API made easily accessible via auto-generated methods",
   "main": "dist/index.js",
   "scripts": {
     "prepublishOnly": "npm run lint && npm run build && npm run test && npm run docs",
@@ -21,6 +21,8 @@
     "url": "https://github.com/vytenisu/api-link.git"
   },
   "keywords": [
+    "rest",
+    "restful",
     "fetch",
     "api",
     "back-end",
@@ -64,7 +66,9 @@
     "typedoc": "^0.17.3",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11",
-    "webpack-node-externals": "^1.7.2"
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {
+    "param-case": "^3.0.3"
   }
 }

@@ -1,5 +1,6 @@
 import * as fetchMock from 'fetch-mock'
 import {Api} from './api'
+import {EArgDeliveryType} from './types'
 
 describe('Api', () => {
   afterEach(() => {
@@ -22,6 +23,40 @@ describe('Api', () => {
     const api = new Api({baseUrl: 'http://localhost:1234'})
     const response = await api.test()
     expect(response).toBe(good)
+  })
+
+  it('converts method to kebab-case by default', async () => {
+    const expected = 'response'
+    fetchMock.post('/test-test', JSON.stringify(expected))
+    const api = new Api()
+    const response = await api.testTest()
+    expect(response).toBe(expected)
+  })
+
+  it('does not convert slashes into dashes for method names', async () => {
+    const expected = 'response'
+    fetchMock.post('/test/test', JSON.stringify(expected))
+    const api = new Api()
+    const response = await api['test/test']()
+    expect(response).toBe(expected)
+  })
+
+  it('uses default args', async () => {
+    const expected = 'response'
+    fetchMock.get('/test?test=123', JSON.stringify(expected))
+
+    const api = new Api({
+      defaultArgsMapper: (requestMethod, methodName) => {
+        if (requestMethod === 'GET' && methodName === 'getTest') {
+          return {test: 123}
+        } else {
+          return {}
+        }
+      },
+    })
+
+    const actual = await api.getTest()
+    expect(actual).toBe(expected)
   })
 
   it('uses method convention for get', async () => {
@@ -64,14 +99,6 @@ describe('Api', () => {
     expect(response).toBe(expected)
   })
 
-  it('does not use method convention when disabled', async () => {
-    const expected = 'get'
-    fetchMock.get('/getTest', JSON.stringify(expected))
-    const api = new Api({useMethodConvention: false})
-    const response = await api.getTest()
-    expect(response).toBe(expected)
-  })
-
   it('uses query for GET by default', async () => {
     const expected = 'result'
     fetchMock.get('/test?test=123', JSON.stringify(expected))
@@ -105,7 +132,30 @@ describe('Api', () => {
     expect(await api.deleteTest(arg)).toBe(expected)
   })
 
-  it('uses args value mapper', async () => {
+  it('uses delivery mapper', async () => {
+    const expected = 'result'
+    fetchMock.post('/test?test=123', JSON.stringify(expected))
+
+    const api = new Api({
+      argsDeliveryMapper: (requestMethod, methodName, argName, value) => {
+        if (
+          requestMethod === 'POST' &&
+          methodName === 'postTest' &&
+          argName === 'test' &&
+          value === 123
+        ) {
+          return EArgDeliveryType.QUERY
+        } else {
+          return EArgDeliveryType.BODY
+        }
+      },
+    })
+
+    const actual = await api.postTest({test: 123})
+    expect(actual).toBe(expected)
+  })
+
+  it('uses value mapper', async () => {
     const method = 'test'
     const arg = 'arg'
     const value = '123'
@@ -133,11 +183,11 @@ describe('Api', () => {
     fetchMock.put(`/test`, JSON.stringify(expected))
 
     const api = new Api({
-      requestMethodMapper: (methodName, config) => {
-        if (config.useMethodConvention && methodName === 'aaa') {
-          return {requestMethod: 'put', apiMethodName: 'test'}
+      requestMethodMapper: (methodName) => {
+        if (methodName === 'aaa') {
+          return {requestMethod: 'put', methodName: 'test'}
         } else {
-          return {requestMethod: 'GET', apiMethodName: methodName}
+          return {requestMethod: 'GET', methodName: methodName}
         }
       },
     })
@@ -159,6 +209,20 @@ describe('Api', () => {
     })
 
     const response = await api.test({test: 123})
+    expect(response).toBe(expected)
+  })
+
+  it('uses request query mapper', async () => {
+    const expected = 'result'
+
+    fetchMock.get('/test/123', JSON.stringify(expected))
+
+    const api = new Api({
+      requestQueryMapper: (args, getQuery) =>
+        args?.test === 123 ? '/123' : getQuery(args),
+    })
+
+    const response = await api.getTest({test: 123})
     expect(response).toBe(expected)
   })
 
@@ -198,6 +262,27 @@ describe('Api', () => {
     expect(actual).toBe(response)
   })
 
+  it('uses fetch args override', async () => {
+    const expected = 'result'
+    fetchMock.get(`/overriden`, JSON.stringify(expected))
+
+    const api = new Api({
+      overrideFetchArgs: (url, requestInit) => {
+        if (url === '/test' && requestInit.method === 'POST') {
+          return {
+            url: '/overriden',
+            requestInit: {...requestInit, method: 'GET'},
+          }
+        } else {
+          return {url, requestInit}
+        }
+      },
+    })
+
+    const actual = await api.postTest()
+    expect(actual).toBe(expected)
+  })
+
   it('rejects promise in case of problem with request', async () => {
     const expected = 'response'
     fetchMock.post('/test', {status: 500, body: JSON.stringify(expected)})
@@ -212,5 +297,39 @@ describe('Api', () => {
     }
 
     expect(error).toBeTruthy()
+  })
+
+  it('allows to extend API class and use "this" context', async () => {
+    const expected = 'response'
+
+    const CustomApi = class extends Api {
+      testA() {
+        return expected
+      }
+      testB() {
+        return this.testA()
+      }
+    }
+
+    const api = new CustomApi()
+    const actual = await api.testB()
+    expect(actual).toBe(expected)
+  })
+
+  it('allows to extend API class and call parent methods', async () => {
+    const responseStart = 'start'
+    const responseEnd = 'end'
+    fetchMock.post('/test', JSON.stringify(responseStart))
+
+    const CustomApi = class extends Api {
+      async test() {
+        const response = await this._proxy.test()
+        return response + responseEnd
+      }
+    }
+
+    const api = new CustomApi()
+    const actual = await api.test()
+    expect(actual).toBe(responseStart + responseEnd)
   })
 })

@@ -1,69 +1,26 @@
-export interface IFetchInit {
-  requestInit?: RequestInit
-}
+import {
+  ALLOWED_REQUEST_METHODS,
+  DEFAULT_DETECTED_REQUEST_METHOD,
+  IApiConfig,
+  EArgDeliveryType,
+  IMethodArgs,
+  IApiClass,
+} from './types'
 
-export enum EArgType {
-  BODY = 'BODY',
-  QUERY = 'QUERY',
-}
+import {paramCase} from 'param-case'
 
-export type IArgsPlaceMapper = (
-  requestMethod: string,
-  methodName: string,
-  argName: string,
-  value: any,
-) => EArgType
-
-export type IArgsValueMapper = (
-  methodName: string,
-  argName: string,
-  value: any,
-) => any
-
-export type IRequestMethodMapper = (
-  methodName: string,
-  config: IApiConfig,
-) => {
-  requestMethod: string
-  apiMethodName: string
-}
-
-export type IRequestBodyMapper = (body: any) => string
-
-export type IResponseMapper = (response: Response) => Promise<any>
-
-export interface IMethodArgs {
-  [argName: string]: any
-}
-
-export interface IApiConfig {
-  baseUrl?: string
-  useMethodConvention?: boolean
-  fetchConfig?: IFetchInit
-  argsPlaceMapper?: IArgsPlaceMapper
-  argsValueMapper?: IArgsValueMapper
-  requestMethodMapper?: IRequestMethodMapper
-  requestBodyMapper?: IRequestBodyMapper
-  responseMapper?: IResponseMapper
-}
-
-export const ALLOWED_REQUEST_METHODS = ['GET', 'POST', 'PUT', 'DELETE']
-export const DEFAULT_DETECTED_REQUEST_METHOD = 'POST'
-export const DEFAULT_STATIC_REQUEST_METHOD = 'GET'
-
-export const resolveRequestMethod = (
-  methodName: string,
-  config: IApiConfig,
-) => {
+/**
+ * Resolves request and API methods based on default API Link convention
+ * @param methodName method name as it was written by API consumer
+ * @returns mapped request and API methods
+ */
+export const resolveMethodByConvention = (methodName: string) => {
   const requestMethod =
     ALLOWED_REQUEST_METHODS.find((method) =>
       new RegExp(method.toLocaleLowerCase() + '([^a-z].*)?$').test(methodName),
     ) || DEFAULT_DETECTED_REQUEST_METHOD
 
-  if (
-    config.useMethodConvention &&
-    (methodName as string).startsWith(requestMethod.toLocaleLowerCase())
-  ) {
+  if ((methodName as string).startsWith(requestMethod.toLocaleLowerCase())) {
     let actualMethodName = (methodName as string).substr(requestMethod.length)
 
     if (
@@ -79,31 +36,65 @@ export const resolveRequestMethod = (
 
   return {
     requestMethod,
-    apiMethodName: methodName,
+    methodName,
   }
 }
 
-export interface IApiClass extends Function {
-  new (config?: IApiConfig): any
+/**
+ * Serializes arguments to a query which can then be added to URL
+ * @param args arguments for API
+ * @returns query to be appended to URL
+ */
+export const getQuery = (args: IMethodArgs) => {
+  if (Object.keys(args).length) {
+    const query = Object.entries(args)
+      .map(
+        ([name, value]) =>
+          `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
+      )
+      .join('&')
+
+    return `?${query}`
+  }
+
+  return ''
 }
 
+/**
+ * Formats method name before using it
+ * @param methodName initial method name
+ * @returns formatted method name
+ */
+export const formatMethod = (methodName: string) =>
+  methodName
+    .split('/')
+    .map((name) => paramCase(name))
+    .join('/')
+
+/**
+ * Api Link class
+ */
 export const Api = class {
+  protected _proxy: any
+
   constructor(config: IApiConfig = {}) {
     config = {
       baseUrl: '',
-      useMethodConvention: true,
-      argsPlaceMapper: (requestMethod) =>
-        requestMethod === 'GET' ? EArgType.QUERY : EArgType.BODY,
+      defaultArgsMapper: () => ({}),
+      argsDeliveryMapper: (requestMethod) =>
+        requestMethod === 'GET'
+          ? EArgDeliveryType.QUERY
+          : EArgDeliveryType.BODY,
       argsValueMapper: (...[, , value]) => value,
-      requestMethodMapper:
-        config.useMethodConvention !== false
-          ? resolveRequestMethod
-          : (apiMethodName) => ({
-              requestMethod: DEFAULT_STATIC_REQUEST_METHOD,
-              apiMethodName,
-            }),
+      requestMethodMapper: resolveMethodByConvention,
+      apiMethodFormatter: formatMethod,
       requestBodyMapper: (body) => JSON.stringify(body),
+      requestQueryMapper: (query) => getQuery(query),
       responseMapper: (response) => response.json(),
+      overrideFetchArgs: (url, requestInit) => ({
+        url,
+        requestInit,
+      }),
       ...config,
       fetchConfig: {
         requestInit: {
@@ -113,89 +104,134 @@ export const Api = class {
       },
     }
 
-    return new Proxy(this, {
-      get: (...[, methodName]) => async (options: IMethodArgs = {}) => {
-        const clonedConfig = {
-          ...config,
-          fetchConfig: {
-            requestInit: {...config.fetchConfig.requestInit},
-          },
-        }
+    this._proxy = createProxy.call(this, config, true)
+    return createProxy.call(this, config)
+  }
+} as IApiClass
 
-        for (let argName in options) {
-          if (options.hasOwnProperty(argName)) {
-            options[argName] = clonedConfig.argsValueMapper(
-              methodName as string,
-              argName,
-              options[argName],
-            )
-          }
+const createProxy = function (config: IApiConfig, ignoreOverrides = false) {
+  return new Proxy(this, {
+    get: (target, methodName) => {
+      if (!ignoreOverrides) {
+        if (!Object.is((this as any)[methodName], undefined)) {
+          return (this as any)[methodName].bind(this)
         }
+      }
+
+      return async (args: IMethodArgs = {}) => {
+        const clonedConfig = cloneConfig(config)
 
         const {requestInit} = clonedConfig.fetchConfig
         let url = clonedConfig.baseUrl
 
-        const {apiMethodName, requestMethod} = clonedConfig.requestMethodMapper(
-          methodName as string,
+        const {
+          methodName: apiMethodName,
+          requestMethod,
+        } = clonedConfig.requestMethodMapper(methodName as string, args)
+
+        const mergedArgs = mapValues(
+          {
+            ...clonedConfig.defaultArgsMapper(
+              requestMethod,
+              methodName as string,
+            ),
+            ...args,
+          },
           clonedConfig,
+          methodName as string,
         )
 
         requestInit.method = requestMethod
-        url += `/${apiMethodName}`
+        url += `/${clonedConfig.apiMethodFormatter(apiMethodName)}`
 
-        const bodyArgs: IMethodArgs = {}
+        const bodyArgs = getArgsByDeliveryType(
+          mergedArgs,
+          methodName as string,
+          requestMethod,
+          clonedConfig,
+          EArgDeliveryType.BODY,
+        )
 
-        Object.entries(options).forEach(([name, value]) => {
-          if (
-            clonedConfig.argsPlaceMapper(
-              requestInit.method,
-              methodName as string,
-              name,
-              value,
-            ) === EArgType.BODY
-          ) {
-            bodyArgs[name] = value
-          }
-        })
-
-        const queryArgs: IMethodArgs = {}
-
-        Object.entries(options).forEach(([name, value]) => {
-          if (
-            clonedConfig.argsPlaceMapper(
-              requestInit.method,
-              methodName as string,
-              name,
-              value,
-            ) === EArgType.QUERY
-          ) {
-            queryArgs[name] = value
-          }
-        })
+        const queryArgs = getArgsByDeliveryType(
+          mergedArgs,
+          methodName as string,
+          requestMethod,
+          clonedConfig,
+          EArgDeliveryType.QUERY,
+        )
 
         if (Object.keys(bodyArgs).length) {
           requestInit.body = clonedConfig.requestBodyMapper(bodyArgs) as any
         }
 
-        if (Object.keys(queryArgs).length) {
-          const query = Object.entries(queryArgs)
-            .map(
-              ([name, value]) =>
-                `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
-            )
-            .join('&')
+        url += clonedConfig.requestQueryMapper(queryArgs, getQuery)
 
-          url += `?${query}`
-        }
+        const {
+          url: fetchUrl,
+          requestInit: fetchRequestInit,
+        } = clonedConfig.overrideFetchArgs(
+          url,
+          clonedConfig.fetchConfig.requestInit,
+        )
 
-        const response = await fetch(url, clonedConfig.fetchConfig.requestInit)
+        const response = await fetch(fetchUrl, fetchRequestInit)
 
         if (!response.ok || response.status !== 200) {
           throw response
         }
 
         return clonedConfig.responseMapper(response)
-      },
-    })
+      }
+    },
+  })
+}
+
+const cloneConfig = (config: IApiConfig) => ({
+  ...config,
+  fetchConfig: {
+    requestInit: {...config.fetchConfig.requestInit},
+  },
+})
+
+const mapValues = (
+  mergedArgs: IMethodArgs,
+  config: IApiConfig,
+  methodName: string,
+) => {
+  for (let argName in mergedArgs) {
+    if (mergedArgs.hasOwnProperty(argName)) {
+      mergedArgs[argName] = config.argsValueMapper(
+        methodName as string,
+        argName,
+        mergedArgs[argName],
+      )
+    }
   }
-} as IApiClass
+
+  return mergedArgs
+}
+
+const getArgsByDeliveryType = (
+  args: IMethodArgs,
+  methodName: string,
+  requestMethod: string,
+  config: IApiConfig,
+  argType: EArgDeliveryType,
+) => {
+  const result: IMethodArgs = {}
+
+  Object.entries(args).forEach(([name, value]) => {
+    if (
+      config.argsDeliveryMapper(
+        requestMethod,
+        methodName as string,
+        name,
+        value,
+      ) === argType
+    ) {
+      result[name] = value
+    }
+  })
+
+  return result
+}

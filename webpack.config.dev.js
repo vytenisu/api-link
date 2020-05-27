@@ -1,12 +1,10 @@
 const webpack = require('webpack')
-const nodeExternals = require('webpack-node-externals')
 const LicenseWebpackPlugin = require('license-webpack-plugin')
   .LicenseWebpackPlugin
 
 const exportedConfig = {
   entry: __dirname + '/index.ts',
   devtool: 'inline-source-map',
-  externals: [nodeExternals()],
   plugins: [new LicenseWebpackPlugin()],
   mode: 'development',
   resolve: {

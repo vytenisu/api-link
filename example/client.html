@@ -5,13 +5,15 @@
     <script src="../dist/index.js"></script>
     <script>
       const baseUrl = 'http://localhost:3000'
-      const basicApi = new window.ApiLink.Api({baseUrl})
+
+      const api = new window.ApiLink.Api({baseUrl})
 
       const makeCalls = async () => {
         responses = {
-          getConstant: await basicApi.getConstant(),
-          getMirror: await basicApi.getMirror({hello: 'world'}),
-          postMirror: await basicApi.postMirror({
+          devices: await api.getDevices({id: 123}),
+          getConstant: await api.getConstant(),
+          getMirror: await api.getMirror({hello: 'world'}),
+          postMirror: await api.postMirror({
             hello: 'world',
             world: 'hello',
           }),
