@@ -6,7 +6,6 @@ import {
   IMethodArgs,
   IApiClass,
 } from './types'
-
 import {paramCase} from 'param-case'
 
 /**
@@ -174,13 +173,13 @@ const createProxy = function (config: IApiConfig, ignoreOverrides = false) {
           clonedConfig.fetchConfig.requestInit,
         )
 
-        const response = await fetch(fetchUrl, fetchRequestInit)
+        const response = await fetch(fetchUrl, fetchRequestInit as any)
 
         if (!response.ok || response.status !== 200) {
           throw response
         }
 
-        return clonedConfig.responseMapper(response)
+        return clonedConfig.responseMapper(response as any)
       }
     },
   })

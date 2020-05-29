@@ -4,7 +4,7 @@ Back-end API made easily accessible via auto-generated methods
 
 _by Vytenis Urbonavičius_
 
-This API is an abstraction layer on top of browser _fetch_ API. It allows accessing back-end services by simply calling auto-generated methods.
+This API is an abstraction layer on top of browser _fetch_ API. It allows accessing back-end services by simply calling auto-generated methods. Library can be configured and extended for use in particular use cases.
 
 ## Use Case
 
@@ -59,6 +59,8 @@ const makeCalls = async () => {
 
 ### Convention
 
+---
+
 **Important:**
 developer has option to disable / change any conventions described below.
 
@@ -71,7 +73,7 @@ By default API method names determine what request method will be used. Followin
 
 In the above cases prefix is removed from the method name before using it.
 
-Methods are then converted to kebab-case.
+Methods are then converted to param-case.
 
 If method does not start with one of these prefixes, it is assumed to be "post". It is convenient when one wants to name methods using another verb. For example _syncDevices_ would actually call "_/sync-devices_".
 
@@ -80,6 +82,8 @@ GET requests put arguments to URL query. All other types of requests put argumen
 _API Link_ expects response to be sent as JSON.
 
 ### Available options
+
+---
 
 When initializing _Api_, a configuration object can be provided as constructor argument. Here are supported object keys:
 
@@ -98,6 +102,8 @@ When initializing _Api_, a configuration object can be provided as constructor a
 Additional documentation can be found under _/docs_ directory inside _API Link_ package.
 
 ### Best practices
+
+---
 
 Before choosing to use _API Link_ one should consider how much configuration and corner-cases would need to be sorted-out in order to make it work for a particular case.
 
@@ -156,6 +162,8 @@ This logic would make _API Link_ use _id_ attribute as part of path. So now when
 api.getDevices({id: 1})
 // This calls "/devices/1" - not "/devices?id=1 anymore
 ```
+
+---
 
 Another common case is when services have URLs like this:
 

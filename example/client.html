@@ -10,7 +10,6 @@
 
       const makeCalls = async () => {
         responses = {
-          devices: await api.getDevices({id: 123}),
           getConstant: await api.getConstant(),
           getMirror: await api.getMirror({hello: 'world'}),
           postMirror: await api.postMirror({
