@@ -68,8 +68,7 @@
     "typedoc": "^0.17.3",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11",
-    "wrapper-webpack-plugin": "^2.1.0"
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {
     "param-case": "^3.0.3"
