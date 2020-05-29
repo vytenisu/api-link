@@ -9,8 +9,10 @@
     "test": "./node_modules/.bin/jest --forceExit --detectOpenHandles",
     "testSync": "./node_modules/.bin/jest --runInBand --forceExit --detectOpenHandles",
     "lint": "./node_modules/.bin/tslint -c ./tslint.json -p ./tsconfig.json -t stylish ./lib/**/*.ts",
-    "build": "./node_modules/.bin/webpack && ./node_modules/.bin/webpack --config ./webpack.config.browser.js",
-    "buildDev": "./node_modules/.bin/webpack --config webpack.config.dev.js && ./node_modules/.bin/webpack --config webpack.config.dev.browser.js",
+    "build": "./node_modules/.bin/webpack && npm run buildBrowser",
+    "buildBrowser": "./node_modules/.bin/webpack --config webpack.config.browser.js",
+    "buildDev": "./node_modules/.bin/webpack --config webpack.config.dev.js && npm run buildDevBrowser",
+    "buildDevBrowser": "./node_modules/.bin/webpack --config webpack.config.dev.browser.js",
     "docs": "./node_modules/.bin/typedoc --module commonjs --target ES6 --exclude **/*.test.* --ignoreCompilerErrors --out ./docs --readme ./README.md --mode file ./index.ts ./lib"
   },
   "homepage": "https://github.com/vytenisu/api-link",
@@ -69,6 +71,7 @@
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
     "webpack-cli": "^3.3.11",
+    "webpack-node-externals": "^1.7.2",
     "wrapper-webpack-plugin": "^2.1.0"
   },
   "dependencies": {
