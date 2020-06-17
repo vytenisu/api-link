@@ -178,7 +178,21 @@ const createProxy = function (config: IApiConfig, ignoreOverrides = false) {
         const response = await fetch(fetchUrl, fetchRequestInit as any)
 
         if (!response.ok || response.status !== 200) {
-          throw response
+          let output
+
+          try {
+            output = await response.text()
+          } catch (e) {
+            throw e
+          }
+
+          try {
+            output = JSON.parse(output)
+          } catch (e) {
+            // NOT NEEDED
+          }
+
+          throw output
         }
 
         return clonedConfig.responseMapper(response as any)
