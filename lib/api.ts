@@ -79,6 +79,7 @@ export const Api = (class {
   constructor(config: IApiConfig = {}) {
     config = {
       baseUrl: '',
+      multipleMethodArgs: false,
       defaultArgsMapper: () => ({}),
       argsDeliveryMapper: requestMethod =>
         requestMethod === 'GET'
@@ -117,7 +118,7 @@ const createProxy = function (config: IApiConfig, ignoreOverrides = false) {
         }
       }
 
-      return async (args: IMethodArgs = {}) => {
+      const dynamicMethod = async (args: IMethodArgs = {}) => {
         const clonedConfig = cloneConfig(config)
 
         const {requestInit} = clonedConfig.fetchConfig
@@ -181,6 +182,12 @@ const createProxy = function (config: IApiConfig, ignoreOverrides = false) {
 
         return clonedConfig.responseMapper(response as any)
       }
+
+      if (config.multipleMethodArgs) {
+        return (...args: any[]) => dynamicMethod({args})
+      }
+
+      return dynamicMethod
     },
   })
 }

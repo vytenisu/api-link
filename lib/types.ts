@@ -150,6 +150,12 @@ export interface IApiConfig {
   fetchConfig?: IFetchInit
 
   /**
+   * Pass all method arguments inside "args" key of an object
+   * Note that "GET" request and query arguments become invalid in such case
+   */
+  multipleMethodArgs?: boolean
+
+  /**
    * Hook for injecting default arguments for API calls
    */
   defaultArgsMapper?: IDefaultArgsMapper

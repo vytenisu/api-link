@@ -89,6 +89,7 @@ When initializing _Api_, a configuration object can be provided as constructor a
 
 - baseUrl - base URL for all instance requests
 - fetchConfig - default arguments for browser fetch API
+- multipleMethodArgs - Pass all method arguments inside _args_ key of an object (_GET_ request and query arguments become invalid in such case)
 - defaultArgsMapper - hook for injecting default arguments for API calls
 - argsDeliveryMapper - hook for overriding logic of how delivery type is applied
 - argsValueMapper - hook for overriding argument values

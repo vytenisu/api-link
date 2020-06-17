@@ -180,14 +180,14 @@ describe('Api', () => {
 
   it('uses request method mapper', async () => {
     const expected = 'result'
-    fetchMock.put(`/test`, JSON.stringify(expected))
+    fetchMock.put('/test', JSON.stringify(expected))
 
     const api = new Api({
-      requestMethodMapper: (methodName) => {
+      requestMethodMapper: methodName => {
         if (methodName === 'aaa') {
           return {requestMethod: 'put', methodName: 'test'}
         } else {
-          return {requestMethod: 'GET', methodName: methodName}
+          return {requestMethod: 'GET', methodName}
         }
       },
     })
@@ -233,7 +233,7 @@ describe('Api', () => {
     fetchMock.post('/test', JSON.stringify(response))
 
     const api = new Api({
-      responseMapper: async (originalResponse) => {
+      responseMapper: async originalResponse => {
         const data = await originalResponse.text()
 
         if (data === JSON.stringify(response)) {
@@ -264,7 +264,7 @@ describe('Api', () => {
 
   it('uses fetch args override', async () => {
     const expected = 'result'
-    fetchMock.get(`/overriden`, JSON.stringify(expected))
+    fetchMock.get('/overriden', JSON.stringify(expected))
 
     const api = new Api({
       overrideFetchArgs: (url, requestInit) => {
@@ -321,6 +321,7 @@ describe('Api', () => {
     const responseEnd = 'end'
     fetchMock.post('/test', JSON.stringify(responseStart))
 
+    // tslint:disable max-classes-per-file
     const CustomApi = class extends Api {
       async test() {
         const response = await this._proxy.test()
@@ -331,5 +332,24 @@ describe('Api', () => {
     const api = new CustomApi()
     const actual = await api.test()
     expect(actual).toBe(responseStart + responseEnd)
+  })
+
+  it('allows passing all method arguments', async () => {
+    const args = ['a', 'b']
+
+    const expected = {
+      args,
+    }
+
+    fetchMock.post(
+      (url, options) =>
+        url === '/test' && options.body === JSON.stringify(expected),
+      JSON.stringify(expected),
+    )
+
+    const api = new Api({multipleMethodArgs: true})
+    const actual = await api.test(...args)
+
+    expect(actual).toEqual(expected)
   })
 })
