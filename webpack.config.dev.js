@@ -11,7 +11,14 @@ const exportedConfig = {
   target: 'node',
   externals: [
     nodeExternals({
-      whitelist: ['param-case', 'tslib', 'dot-case', 'no-case', 'lower-case'],
+      whitelist: [
+        'param-case',
+        'tslib',
+        'dot-case',
+        'no-case',
+        'lower-case',
+        'node-fetch',
+      ],
     }),
   ],
   resolve: {

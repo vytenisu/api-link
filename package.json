@@ -1,6 +1,6 @@
 {
   "name": "api-link",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Back-end API made easily accessible via auto-generated methods",
   "main": "dist/node.js",
   "browser": "./dist/index.js",
@@ -61,7 +61,6 @@
     "find-node-modules": "^2.0.0",
     "jest": "^25.2.3",
     "license-webpack-plugin": "^2.1.4",
-    "node-fetch": "^2.6.0",
     "npm-dts-webpack-plugin": "^1.2.1",
     "ts-jest": "^25.2.1",
     "ts-loader": "^6.2.2",
@@ -74,6 +73,7 @@
     "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {
-    "param-case": "^3.0.3"
+    "param-case": "^3.0.3",
+    "node-fetch": "^2.6.0"
   }
 }
