@@ -1,6 +1,6 @@
 {
   "name": "api-link",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Back-end API made easily accessible via auto-generated methods",
   "main": "dist/node.js",
   "browser": "./dist/index.js",

@@ -99,6 +99,7 @@ export const Api = (class {
       fetchConfig: {
         requestInit: {
           method: null,
+          headers: {'Content-Type': 'application/json'},
           ...(config.fetchConfig?.requestInit ?? {}),
         },
       },
