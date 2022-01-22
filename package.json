@@ -74,6 +74,6 @@
   },
   "dependencies": {
     "param-case": "^3.0.3",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^3.1.1"
   }
 }
